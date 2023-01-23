@@ -1,8 +1,10 @@
 use self::l2::BinanceSpotBookUpdater;
 use super::{Binance, ExchangeServer};
+use crate::exchange::binance::spot::candles::BinanceCandle;
+use crate::transformer::stateless::StatelessTransformer;
 use crate::{
     exchange::{ExchangeId, StreamSelector},
-    subscription::book::OrderBooksL2,
+    subscription::{book::OrderBooksL2, candle::Candles},
     transformer::book::MultiBookTransformer,
     ExchangeWsStream,
 };
@@ -10,6 +12,10 @@ use crate::{
 /// Level 2 OrderBook types (top of book) and spot
 /// [`OrderBookUpdater`](crate::transformer::book::OrderBookUpdater) implementation.
 pub mod l2;
+
+/// Candles types
+/// [`OrderBookUpdater`](crate::transformer::book::OrderBookUpdater) implementation.
+pub mod candles;
 
 /// [`BinanceSpot`] WebSocket server base url.
 ///
@@ -34,4 +40,8 @@ impl ExchangeServer for BinanceServerSpot {
 impl StreamSelector<OrderBooksL2> for BinanceSpot {
     type Stream =
         ExchangeWsStream<MultiBookTransformer<Self, OrderBooksL2, BinanceSpotBookUpdater>>;
+}
+
+impl StreamSelector<Candles> for BinanceSpot {
+    type Stream = ExchangeWsStream<StatelessTransformer<Self, Candles, BinanceCandle>>;
 }

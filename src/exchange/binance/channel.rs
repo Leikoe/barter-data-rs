@@ -5,6 +5,7 @@ use crate::{
         liquidation::Liquidations,
         trade::PublicTrades,
         Subscription,
+        candle::Candles
     },
     Identifier,
 };
@@ -46,11 +47,20 @@ impl BinanceChannel {
     ///
     /// See docs: <https://binance-docs.github.io/apidocs/futures/en/#liquidation-order-streams>
     pub const LIQUIDATIONS: Self = Self("@forceOrder");
+    
+    // TODO: generic impl
+    pub const CANDLES: Self = Self("@kline_1m");
 }
 
 impl<Server> Identifier<BinanceChannel> for Subscription<Binance<Server>, PublicTrades> {
     fn id(&self) -> BinanceChannel {
         BinanceChannel::TRADES
+    }
+}
+
+impl<Server> Identifier<BinanceChannel> for Subscription<Binance<Server>, Candles> {
+    fn id(&self) -> BinanceChannel {
+        BinanceChannel::CANDLES
     }
 }
 

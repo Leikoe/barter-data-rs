@@ -42,6 +42,43 @@ pub struct Subscription<Exchange, Kind> {
     pub kind: Kind,
 }
 
+/// Barter time interval used for specifying the interval of a [`SubKind::Candle`].
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize, Serialize)]
+pub enum Interval {
+    #[serde(alias = "1m")]
+    Minute1,
+    #[serde(alias = "3m")]
+    Minute3,
+    #[serde(alias = "5m")]
+    Minute5,
+    #[serde(alias = "15m")]
+    Minute15,
+    #[serde(alias = "30m")]
+    Minute30,
+    #[serde(alias = "1h")]
+    Hour1,
+    #[serde(alias = "2h")]
+    Hour2,
+    #[serde(alias = "4h")]
+    Hour4,
+    #[serde(alias = "6h")]
+    Hour6,
+    #[serde(alias = "8h")]
+    Hour8,
+    #[serde(alias = "12h")]
+    Hour12,
+    #[serde(alias = "1d")]
+    Day1,
+    #[serde(alias = "3d")]
+    Day3,
+    #[serde(alias = "1w")]
+    Week1,
+    #[serde(alias = "1M")]
+    Month1,
+    #[serde(alias = "3M")]
+    Month3,
+}
+
 impl<Exchange, Kind> Display for Subscription<Exchange, Kind>
 where
     Exchange: Display,
