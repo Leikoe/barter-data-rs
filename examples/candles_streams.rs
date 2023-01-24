@@ -1,3 +1,4 @@
+use barter_data::subscription::Interval;
 use barter_data::{
     exchange::{binance::spot::BinanceSpot, ExchangeId},
     streams::Streams,
@@ -15,10 +16,9 @@ async fn main() {
     // Initialise PublicTrades Streams for BinanceFuturesUsd only
     // '--> each call to StreamBuilder::subscribe() creates a separate WebSocket connection
     let mut streams = Streams::<Candles>::builder()
-
         // Separate WebSocket connection for BTC_USDT stream since it's very high volume
         .subscribe([
-            (BinanceSpot::default(), "btc", "usdt", InstrumentKind::Spot, Candles),
+            (BinanceSpot::default(), "btc", "usdt", InstrumentKind::Spot, Candles(Interval::Minute1)),
         ])
         .init()
         .await

@@ -1,11 +1,13 @@
 use super::SubKind;
+use crate::subscription::Interval;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use std::fmt::Display;
 
 /// Barter [`Subscription`](super::Subscription) [`SubKind`] that yields [`Candle`]
 /// [`MarketEvent<T>`](crate::event::MarketEvent) events.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize, Serialize)]
-pub struct Candles;
+pub struct Candles(pub Interval);
 
 impl SubKind for Candles {
     type Event = Candle;

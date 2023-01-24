@@ -79,6 +79,33 @@ pub enum Interval {
     Month3,
 }
 
+impl Display for Interval {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Interval::Minute1 => "1m",
+                Interval::Minute3 => "3m",
+                Interval::Minute5 => "5m",
+                Interval::Minute15 => "15m",
+                Interval::Minute30 => "30m",
+                Interval::Hour1 => "1h",
+                Interval::Hour2 => "2h",
+                Interval::Hour4 => "4h",
+                Interval::Hour6 => "6h",
+                Interval::Hour8 => "8h",
+                Interval::Hour12 => "12h",
+                Interval::Day1 => "1d",
+                Interval::Day3 => "3d",
+                Interval::Week1 => "1w",
+                Interval::Month1 => "1M",
+                Interval::Month3 => "3M",
+            }
+        )
+    }
+}
+
 impl<Exchange, Kind> Display for Subscription<Exchange, Kind>
 where
     Exchange: Display,

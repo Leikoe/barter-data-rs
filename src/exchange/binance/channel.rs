@@ -1,15 +1,17 @@
 use super::{futures::BinanceFuturesUsd, Binance};
+use crate::subscription::Interval;
 use crate::{
     subscription::{
         book::{OrderBooksL1, OrderBooksL2},
+        candle::Candles,
         liquidation::Liquidations,
         trade::PublicTrades,
         Subscription,
-        candle::Candles
     },
     Identifier,
 };
 use serde::Serialize;
+use std::fmt::{Debug, Display};
 
 /// Type that defines how to translate a Barter [`Subscription`] into a [`Binance`](super::Binance)
 /// channel to be subscribed to.
@@ -47,9 +49,8 @@ impl BinanceChannel {
     ///
     /// See docs: <https://binance-docs.github.io/apidocs/futures/en/#liquidation-order-streams>
     pub const LIQUIDATIONS: Self = Self("@forceOrder");
-    
-    // TODO: generic impl
-    pub const CANDLES: Self = Self("@kline_1m");
+
+    pub const CANDLES: Self = Self("@kline_");
 }
 
 impl<Server> Identifier<BinanceChannel> for Subscription<Binance<Server>, PublicTrades> {
@@ -60,7 +61,24 @@ impl<Server> Identifier<BinanceChannel> for Subscription<Binance<Server>, Public
 
 impl<Server> Identifier<BinanceChannel> for Subscription<Binance<Server>, Candles> {
     fn id(&self) -> BinanceChannel {
-        BinanceChannel::CANDLES
+        match self.kind.0 {
+            Interval::Minute1 => BinanceChannel("@kline_1m"),
+            Interval::Minute3 => BinanceChannel("@kline_3m"),
+            Interval::Minute5 => BinanceChannel("@kline_5m"),
+            Interval::Minute15 => BinanceChannel("@kline_15m"),
+            Interval::Minute30 => BinanceChannel("@kline_30m"),
+            Interval::Hour1 => BinanceChannel("@kline_1h"),
+            Interval::Hour2 => BinanceChannel("@kline_2h"),
+            Interval::Hour4 => BinanceChannel("@kline_4h"),
+            Interval::Hour6 => BinanceChannel("@kline_6h"),
+            Interval::Hour8 => BinanceChannel("@kline_8h"),
+            Interval::Hour12 => BinanceChannel("@kline_12h"),
+            Interval::Day1 => BinanceChannel("@kline_1d"),
+            Interval::Day3 => BinanceChannel("@kline_3d"),
+            Interval::Week1 => BinanceChannel("@kline_1w"),
+            Interval::Month1 => BinanceChannel("@kline_1M"),
+            Interval::Month3 => BinanceChannel("@kline_3M"),
+        }
     }
 }
 

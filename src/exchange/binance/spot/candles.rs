@@ -1,3 +1,5 @@
+use crate::exchange::binance::channel::BinanceChannel;
+use crate::subscription::candle::Candle;
 use crate::{
     event::{MarketEvent, MarketIter},
     exchange::{ExchangeId, ExchangeSub},
@@ -7,8 +9,6 @@ use crate::{
 use barter_integration::model::{Exchange, Instrument, SubscriptionId};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use crate::exchange::binance::channel::BinanceChannel;
-use crate::subscription::candle::Candle;
 
 /// Binance real-time trade message.
 ///
@@ -53,8 +53,8 @@ use crate::subscription::candle::Candle;
 /// ```
 #[derive(Clone, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
 pub struct BinanceCandle {
-    #[serde(alias = "s", deserialize_with = "de_trade_subscription_id")]
-    pub subscription_id: SubscriptionId,
+    #[serde(alias = "s")]
+    pub symbol: String,
     #[serde(
         alias = "E",
         deserialize_with = "barter_integration::de::de_u64_epoch_ms_as_datetime_utc"
@@ -90,16 +90,25 @@ pub struct BinanceCandleInner {
     pub volume: f64,
     #[serde(alias = "n")]
     pub trades: u64,
+    #[serde(alias = "x")]
+    pub closed: bool,
 }
 
 impl Identifier<Option<SubscriptionId>> for BinanceCandle {
     fn id(&self) -> Option<SubscriptionId> {
-        Some(self.subscription_id.clone())
+        Some(SubscriptionId(format!(
+            "@kline_{}|{}",
+            self.candle.interval, self.symbol
+        )))
     }
 }
 
 impl From<(ExchangeId, Instrument, BinanceCandle)> for MarketIter<Candle> {
     fn from((exchange_id, instrument, trade): (ExchangeId, Instrument, BinanceCandle)) -> Self {
+        if !trade.candle.closed {
+            return Self(vec![]);
+        }
+
         Self(vec![Ok(MarketEvent {
             exchange_time: trade.time,
             received_time: Utc::now(),
@@ -112,44 +121,33 @@ impl From<(ExchangeId, Instrument, BinanceCandle)> for MarketIter<Candle> {
                 low: trade.candle.low,
                 close: trade.candle.close,
                 volume: trade.candle.volume,
-                trade_count: trade.candle.trades
+                trade_count: trade.candle.trades,
             },
         })])
     }
 }
 
-/// Deserialize a [`BinanceCandle`] "s" (eg/ "BTCUSDT") as the associated [`SubscriptionId`]
-/// (eg/ "@trade|BTCUSDT").
-pub fn de_trade_subscription_id<'de, D>(deserializer: D) -> Result<SubscriptionId, D::Error>
-    where
-        D: serde::de::Deserializer<'de>,
-{
-    <&str as Deserialize>::deserialize(deserializer)
-        .map(|market| ExchangeSub::from((BinanceChannel::CANDLES, market)).id())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     mod de {
         use super::*;
         use barter_integration::de::datetime_utc_from_epoch_duration;
         use barter_integration::error::SocketError;
         use serde::de::Error;
         use std::time::Duration;
-        
+
         #[test]
         fn test_binance_trade() {
             struct TestCase {
                 input: &'static str,
                 expected: Result<BinanceCandle, SocketError>,
             }
-            
-            let tests = vec![
-                TestCase {
-                    // TC0: Spot trade valid
-                    input: r#"
+
+            let tests = vec![TestCase {
+                // TC0: Spot trade valid
+                input: r#"
                     {
                       "e": "kline",
                       "E": 123456789,
@@ -175,31 +173,24 @@ mod tests {
                       }
                     }
                     "#,
-                    expected: Ok(BinanceCandle {
-                        subscription_id: SubscriptionId::from("@kline_1m|BNBBTC"),
-                        time: datetime_utc_from_epoch_duration(Duration::from_millis(
-                            123456789,
-                        )),
-    
-                        candle: BinanceCandleInner {
-                            start: datetime_utc_from_epoch_duration(Duration::from_millis(
-                                123400000,
-                            )),
-                            end: datetime_utc_from_epoch_duration(Duration::from_millis(
-                                123460000,
-                            )),
-                            interval: "1m".to_string(),
-                            open: 0.0010,
-                            close: 0.0020,
-                            high: 0.0025,
-                            low: 0.0015,
-                            volume: 1000.0,
-                            trades: 100
-                        },
-                    }),
-                },
-            ];
-            
+                expected: Ok(BinanceCandle {
+                    symbol: "BNBBTC".to_string(),
+                    time: datetime_utc_from_epoch_duration(Duration::from_millis(123456789)),
+
+                    candle: BinanceCandleInner {
+                        start: datetime_utc_from_epoch_duration(Duration::from_millis(123400000)),
+                        end: datetime_utc_from_epoch_duration(Duration::from_millis(123460000)),
+                        interval: "1m".to_string(),
+                        open: 0.0010,
+                        close: 0.0020,
+                        high: 0.0025,
+                        low: 0.0015,
+                        volume: 1000.0,
+                        trades: 100,
+                    },
+                }),
+            }];
+
             for (index, test) in tests.into_iter().enumerate() {
                 let actual = serde_json::from_str::<BinanceCandle>(test.input);
                 match (actual, test.expected) {

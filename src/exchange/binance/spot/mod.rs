@@ -1,6 +1,7 @@
 use self::l2::BinanceSpotBookUpdater;
 use super::{Binance, ExchangeServer};
 use crate::exchange::binance::spot::candles::BinanceCandle;
+use crate::subscription::Interval;
 use crate::transformer::stateless::StatelessTransformer;
 use crate::{
     exchange::{ExchangeId, StreamSelector},
